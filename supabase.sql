@@ -219,6 +219,7 @@ begin
 end $$;
 
 -- ---------- Jogosultságok ----------
+grant usage on schema public to anon, authenticated;
 revoke execute on all functions in schema public from public, anon, authenticated;
 grant execute on function
   public.list_people(), public.setup(text[]), public.login(int, text), public.draw(int, text),
