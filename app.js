@@ -18,7 +18,8 @@
     NEED_2_NAMES: "Legalább két név kell.",
     DUPLICATE_NAME: "Két egyforma név van megadva.",
     LOCKED: "Ez az ajtó még zárva van 🤫",
-    ALREADY_OPEN: "Ez a nap már kinyílt, nem módosítható.",
+    ALREADY_OPEN: "Ezt a napot már kinyitotta, nem módosítható.",
+    EMPTY: "Ez az ajtó még üres – várj, amíg megtöltik! 🤫",
     BAD_IMAGE: "Ezt a képet nem sikerült feltölteni (túl nagy?).",
     TEXT_TOO_LONG: "Túl hosszú a szöveg.",
     NOT_DRAWN: "Előbb húzz valakit!",
@@ -326,6 +327,7 @@
       el.classList.remove("wiggle");
       void el.offsetWidth;
       el.classList.add("wiggle");
+      if (x.date_reached) return toast(ERRORS.EMPTY);
       const diff = dayNum(decDate(year, x.day)) - dayNum(today);
       return toast(diff === 1 ? "Holnap nyílik! Türelem 🤫" : `Még ${diff} nap, türelem! 🤫`);
     }
@@ -368,7 +370,8 @@
     );
     const hint = h("p", { class: "hint" },
       "Kattints egy napra, és rakj bele szöveget és/vagy képet ", h("b", {}, me.recipient), " számára. ",
-      "Egy nap a saját dátumán nyílik ki – onnantól már nem módosítható. 🔒"
+      "Bármikor írhatsz bele, egészen addig, amíg ki nem nyitotta. Egy ajtót csak akkor tud kinyitni, ha eljött a napja ",
+      h("b", {}, "és"), " van benne valami. 🔒"
     );
     const grid = h("div", { class: "calendar fill-grid" },
       list.map((x) => {

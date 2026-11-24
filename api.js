@@ -83,8 +83,9 @@
         today: today(),
         days: Array.from({ length: 24 }, (_, i) => {
           const d = i + 1;
-          const x = g && gift(db, g.id, d);
-          return { day: d, unlocked: unlocked(d), has_gift: !!x, opened: !!db.opens[p.id + ":" + d] };
+          const has = !!(g && gift(db, g.id, d));
+          const opened = !!db.opens[p.id + ":" + d];
+          return { day: d, date_reached: unlocked(d), has_gift: has, unlocked: unlocked(d) && (has || opened), opened };
         }),
       };
     },
@@ -92,10 +93,11 @@
       const db = load();
       const p = auth(db, p_id, p_pin);
       if (!unlocked(p_day)) throw new Error("LOCKED");
-      db.opens[p.id + ":" + p_day] = true;
-      store(db);
       const g = giverOf(db, p);
       const x = (g && gift(db, g.id, p_day)) || {};
+      if (!db.opens[p.id + ":" + p_day] && !x.body && !x.image) throw new Error("EMPTY");
+      db.opens[p.id + ":" + p_day] = true;
+      store(db);
       return { day: p_day, body: x.body || null, image: x.image || null };
     },
     given_list({ p_id, p_pin }) {
@@ -104,20 +106,20 @@
       if (!p.drawn) throw new Error("NOT_DRAWN");
       return Array.from({ length: 24 }, (_, i) => {
         const x = gift(db, p.id, i + 1) || {};
-        return { day: i + 1, locked: unlocked(i + 1), has_text: !!x.body, has_image: !!x.image };
+        return { day: i + 1, locked: !!db.opens[p.recipient_id + ":" + (i + 1)], has_text: !!x.body, has_image: !!x.image };
       });
     },
     given_day({ p_id, p_pin, p_day }) {
       const db = load();
       const p = auth(db, p_id, p_pin);
       const x = gift(db, p.id, p_day) || {};
-      return { day: p_day, body: x.body || null, image: x.image || null, locked: unlocked(p_day) };
+      return { day: p_day, body: x.body || null, image: x.image || null, locked: !!db.opens[p.recipient_id + ":" + p_day] };
     },
     save_gift({ p_id, p_pin, p_day, p_body, p_image }) {
       const db = load();
       const p = auth(db, p_id, p_pin);
       if (!p.drawn) throw new Error("NOT_DRAWN");
-      if (unlocked(p_day)) throw new Error("ALREADY_OPEN");
+      if (db.opens[p.recipient_id + ":" + p_day]) throw new Error("ALREADY_OPEN");
       const k = p.id + ":" + p_day;
       if (!(p_body || "").trim() && !p_image) delete db.gifts[k];
       else db.gifts[k] = { body: p_body, image: p_image };
