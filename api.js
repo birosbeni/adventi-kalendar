@@ -1,7 +1,7 @@
 // Adatréteg: valódi Supabase RPC hívások, vagy demó mód localStorage-ban (ugyanazzal a logikával).
 (function () {
   const cfg = window.KALENDAR_CONFIG || {};
-  const DEMO = !cfg.SUPABASE_URL || !cfg.SUPABASE_KEY;
+  const DEMO = !cfg.SUPABASE_URL || !cfg.SUPABASE_KEY || new URLSearchParams(location.search).has("demo");
 
   // ---------- Valódi backend ----------
   async function rpc(fn, args) {

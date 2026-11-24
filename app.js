@@ -1,7 +1,7 @@
 (function () {
   const { DEMO, call, resetDemo } = window.KalendarAPI;
   const app = document.getElementById("app");
-  const SESSION_KEY = "kalendar-session";
+  const SESSION_KEY = window.KalendarAPI.DEMO ? "kalendar-demo-session" : "kalendar-session";
   const TAB_KEY = "kalendar-tab";
 
   // Ajtók sorrendje a naptáron (összekeverve, hogy keresgélni kelljen)
