@@ -494,11 +494,6 @@
     dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
   }
 
-  document.getElementById("logout").addEventListener("click", () => {
-    setSession(null);
-    session = null;
-    renderLogin();
-  });
 
   // ---------- Fényfüzér ----------
   (function lights() {
