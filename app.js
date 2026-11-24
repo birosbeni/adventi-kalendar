@@ -93,6 +93,11 @@
     const s = getSession();
     if (s) {
       try {
+        // A megjegyzett belépés csak akkor érvényes, ha ugyanaz az ember (név) és már van PIN-je –
+        // így egy adatbázis-reset után nem "foglal le" véletlenül senkit.
+        const people = await call("list_people");
+        const p = people.find((x) => x.id === s.id);
+        if (!p || !p.has_pin || p.name !== s.name) throw new Error("STALE_SESSION");
         session = s;
         me = await call("login", auth());
         setUserbar();
@@ -188,6 +193,7 @@
             try {
               session = { id: person.id, pin: pin.value };
               me = await call("login", auth());
+              session.name = me.name;
               setSession(session);
               setUserbar();
               me.drawn ? renderMain() : renderDraw();
