@@ -143,7 +143,7 @@ main { max-width: 980px; margin: 0 auto; padding: 18px 16px 30px; }
 .field { display: block; text-align: left; margin: 12px 0; }
 .field > span { display: block; font-weight: 800; font-size: .85rem; color: var(--ink-soft); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
 
-input[type="text"], input[type="password"], input[inputmode="numeric"], textarea {
+input[type="text"], input[type="url"], input[type="password"], input[inputmode="numeric"], textarea {
   width: 100%;
   font: inherit; color: var(--ink);
   background: #fff;
@@ -435,3 +435,52 @@ body.love .subtitle { color: #ffc2d4; }
 body.love .c1 .door-front { background: radial-gradient(circle, rgba(255,255,255,.22) 2px, transparent 3px) 0 0 / 16px 16px, linear-gradient(160deg, #3c8263, #255b43); }
 body.love .c5 .door-front { background: linear-gradient(160deg, #b8325f, #7e1d44); }
 body.love .door-back { background: linear-gradient(160deg, #fff1f5, #ffd6e2); }
+
+/* ---------- Extrák: zene, válasz, emlékkönyv ---------- */
+.btn.small { padding: 9px 16px; font-size: .95rem; }
+iframe.music { display: block; width: 100%; border: 0; border-radius: 14px; margin: 16px 0 0; background: #222; }
+iframe.music.youtube { aspect-ratio: 16 / 9; }
+iframe.music.spotify { height: 152px; }
+iframe.music.spotify.album, iframe.music.spotify.playlist, iframe.music.spotify.show { height: 352px; }
+.music-link { display: inline-block; margin-top: 8px; color: var(--red); font-weight: 800; }
+
+.react-box { margin-top: 18px; padding-top: 14px; border-top: 2px dashed #ecdcc2; }
+.react-title { margin: 0 0 8px; font-weight: 800; color: var(--ink-soft); }
+.react-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.react-btn {
+  font-size: 1.5rem; line-height: 1; padding: 8px 10px; border-radius: 14px;
+  border: 2px solid #ecdcc2; background: #fff; cursor: pointer; transition: transform .15s;
+}
+.react-btn:hover { transform: scale(1.1); }
+.react-btn.on { border-color: var(--red); background: #ffe3ea; transform: scale(1.12); }
+.react-box textarea {
+  width: 100%; border: 2px solid #ecdcc2; border-radius: 14px; padding: 10px 12px;
+  font: inherit; color: var(--ink); background: #fff; resize: vertical;
+}
+.react-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 10px; }
+.react-status { color: var(--green); font-weight: 800; }
+.door .react-badge { top: auto; bottom: 26px; right: 6px; font-size: .9rem; padding: 1px 5px; }
+.editor-reaction { background: #ffe3ea; color: var(--ink); border-radius: 14px; padding: 10px 14px; margin: 12px 0 0; }
+
+.mem-head { text-align: center; margin-bottom: 26px; }
+.card.memory { max-width: 760px; text-align: left; margin-top: 34px; }
+.card.memory::before { content: "💕"; font-size: 30px; top: -20px; }
+.card.memory h3 { margin: 0 0 12px; font-family: "Pacifico", cursive; font-weight: 400; color: var(--red); font-size: 1.5rem; text-align: center; }
+.mem-sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.mem-side h4 { margin: 0 0 8px; color: var(--ink-soft); }
+.mem-side img { display: block; width: 100%; border-radius: 12px; margin-bottom: 10px; }
+.mem-reply { background: #ffe3ea; border-radius: 12px; padding: 8px 12px; margin: 10px 0 0; }
+
+@media print {
+  body, body.love { background: #fff !important; color: #000; padding: 0; }
+  #snow, .lights, .hills, .tabs, .demo-banner, .userbar, .no-print, .toast { display: none !important; }
+  .top { padding: 0 0 8px; }
+  .logo { color: #c9343f !important; text-shadow: none !important; }
+  .hint { color: #555 !important; }
+  .card.memory { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+}
+.react-box textarea { min-height: 70px; }
+@media (max-width: 560px) {
+  .tabs { flex-wrap: wrap; border-radius: 22px; }
+  .tab { padding: 9px 11px; font-size: .84rem; }
+}

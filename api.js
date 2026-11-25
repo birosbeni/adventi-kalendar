@@ -23,7 +23,12 @@
 
   // ---------- Demó backend ----------
   const KEY = NS + "-demo-db";
-  const load = () => JSON.parse(localStorage.getItem(KEY) || '{"people":[],"gifts":{},"opens":{}}');
+  const load = () => {
+    const db = JSON.parse(localStorage.getItem(KEY) || '{"people":[],"gifts":{},"opens":{}}');
+    db.music = db.music || {};
+    db.reactions = db.reactions || {};
+    return db;
+  };
   const store = (db) => localStorage.setItem(KEY, JSON.stringify(db));
   const YEAR = 2026;
   function today() {
@@ -86,7 +91,7 @@
         today: today(),
         days: Array.from({ length: 24 }, (_, i) => {
           const d = i + 1;
-          const has = !!(g && gift(db, g.id, d));
+          const has = !!(g && (gift(db, g.id, d) || db.music[g.id + ":" + d]));
           const opened = !!db.opens[p.id + ":" + d];
           return { day: d, date_reached: unlocked(d), has_gift: has, unlocked: unlocked(d) && (has || opened), opened };
         }),
@@ -98,7 +103,7 @@
       if (!unlocked(p_day)) throw new Error("LOCKED");
       const g = giverOf(db, p);
       const x = (g && gift(db, g.id, p_day)) || {};
-      if (!db.opens[p.id + ":" + p_day] && !x.body && !x.image) throw new Error("EMPTY");
+      if (!db.opens[p.id + ":" + p_day] && !x.body && !x.image && !(g && db.music[g.id + ":" + p_day])) throw new Error("EMPTY");
       db.opens[p.id + ":" + p_day] = true;
       store(db);
       return { day: p_day, body: x.body || null, image: x.image || null };
@@ -131,6 +136,62 @@
       } catch (e) {
         throw new Error("Demó módban betelt a böngésző tárhelye – próbálj kisebb képet.");
       }
+    },
+    // ---- kétszemélyes extrák (ketten/extra.sql megfelelője) ----
+    react({ p_id, p_pin, p_day, p_emoji, p_reply }) {
+      const db = load();
+      const p = auth(db, p_id, p_pin);
+      if (!db.opens[p.id + ":" + p_day]) throw new Error("NOT_OPENED");
+      const k = p.id + ":" + p_day;
+      if (!p_emoji && !(p_reply || "").trim()) delete db.reactions[k];
+      else db.reactions[k] = { emoji: p_emoji || null, reply: (p_reply || "").trim() || null };
+      store(db);
+    },
+    save_music({ p_id, p_pin, p_day, p_url }) {
+      const db = load();
+      const p = auth(db, p_id, p_pin);
+      if (!p.drawn) throw new Error("NOT_DRAWN");
+      if (db.opens[p.recipient_id + ":" + p_day]) throw new Error("ALREADY_OPEN");
+      const k = p.id + ":" + p_day;
+      const u = (p_url || "").trim();
+      if (!u) delete db.music[k];
+      else if (!/^https:\/\/(open\.spotify\.com|(www\.|m\.|music\.)?youtube\.com|youtu\.be)\/[^\s<>"]{1,280}$/.test(u)) throw new Error("BAD_MUSIC");
+      else db.music[k] = u;
+      store(db);
+    },
+    extras_given({ p_id, p_pin }) {
+      const db = load();
+      const p = auth(db, p_id, p_pin);
+      if (!p.drawn) throw new Error("NOT_DRAWN");
+      return Array.from({ length: 24 }, (_, i) => {
+        const r = db.reactions[p.recipient_id + ":" + (i + 1)] || {};
+        return { day: i + 1, music: db.music[p.id + ":" + (i + 1)] || null, emoji: r.emoji || null, reply: r.reply || null };
+      });
+    },
+    extras_day({ p_id, p_pin, p_day }) {
+      const db = load();
+      const p = auth(db, p_id, p_pin);
+      if (!db.opens[p.id + ":" + p_day]) throw new Error("NOT_OPENED");
+      const g = giverOf(db, p);
+      const r = db.reactions[p.id + ":" + p_day] || {};
+      return { day: p_day, music: (g && db.music[g.id + ":" + p_day]) || null, emoji: r.emoji || null, reply: r.reply || null };
+    },
+    memories({ p_id, p_pin }) {
+      const db = load();
+      const p = auth(db, p_id, p_pin);
+      const g = giverOf(db, p);
+      const side = (giverId, recipientId, d) => {
+        const x = gift(db, giverId, d) || {};
+        const r = db.reactions[recipientId + ":" + d] || {};
+        return { body: x.body || null, image: x.image || null, music: db.music[giverId + ":" + d] || null, emoji: r.emoji || null, reply: r.reply || null };
+      };
+      const out = [];
+      for (let d = 1; d <= 24; d++) {
+        const rec = db.opens[p.id + ":" + d] && g ? side(g.id, p.id, d) : null;
+        const giv = p.recipient_id && db.opens[p.recipient_id + ":" + d] ? side(p.id, p.recipient_id, d) : null;
+        if (rec || giv) out.push({ day: d, received: rec, given: giv });
+      }
+      return out;
     },
   };
 

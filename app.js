@@ -7,6 +7,8 @@
   const CFG = window.KALENDAR_CONFIG || {};
   const PEOPLE = CFG.PEOPLE || 3;
   const LOVE = CFG.THEME === "love";
+  const EXTRAS = !!CFG.EXTRAS; // válasz, zene, emlékkönyv (csak a kétszemélyes oldalon)
+  const REACTIONS = ["❤️", "😍", "🥹", "😂", "😘"];
   if (CFG.SUBTITLE) document.getElementById("subtitle").textContent = CFG.SUBTITLE;
   if (LOVE) document.body.classList.add("love");
 
@@ -31,6 +33,8 @@
     TEXT_TOO_LONG: "Túl hosszú a szöveg.",
     NOT_DRAWN: "Előbb húzz valakit!",
     NO_PERSON: "Nincs ilyen ember.",
+    BAD_MUSIC: "Ezt a linket nem ismerem fel – Spotify vagy YouTube link kell.",
+    NOT_OPENED: "Előbb nyisd ki ezt a napot.",
   };
   const errText = (e) => {
     const m = (e && e.message) || String(e);
@@ -280,12 +284,14 @@
     sessionStorage.setItem(TAB_KEY, tab);
     const tabs = h("div", { class: "tabs", role: "tablist" },
       h("button", { class: "tab", role: "tab", "aria-selected": String(tab === "mine"), onclick: () => renderMain("mine") }, "🎄 Az én naptáram"),
-      h("button", { class: "tab", role: "tab", "aria-selected": String(tab === "fill"), onclick: () => renderMain("fill") }, (LOVE ? "💌 " : "✍️ ") + me.recipient + " naptára")
+      h("button", { class: "tab", role: "tab", "aria-selected": String(tab === "fill"), onclick: () => renderMain("fill") }, (LOVE ? "💌 " : "✍️ ") + me.recipient + " naptára"),
+      EXTRAS && h("button", { class: "tab", role: "tab", "aria-selected": String(tab === "memories"), onclick: () => renderMain("memories") }, "📖 Emlékeink")
     );
     const body = h("div", {}, h("div", { class: "loading" }, "🎁"));
     mount(tabs, body);
     try {
       if (tab === "mine") await renderMine(body);
+      else if (tab === "memories" && EXTRAS) await renderMemories(body);
       else await renderFill(body);
     } catch (e) {
       if (/BAD_PIN|NO_PERSON/.test(e.message)) { setSession(null); return renderLogin(); }
@@ -368,17 +374,122 @@
     const parts = [];
     if (data.image && /^data:image\//.test(data.image)) parts.push(h("img", { src: data.image, alt: "" }));
     if (data.body && data.body.trim()) parts.push(h("p", { class: "reveal-text" }, data.body));
+    let emptyEl = null;
     if (!parts.length) {
-      parts.push(h("div", { class: "reveal-empty" }, h("div", { class: "big" }, "🥲"),
-        h("p", {}, "Ez az ajtó még üres… Úgy tűnik, valaki elfelejtette megtölteni. Szólj neki! 😄")));
+      emptyEl = h("div", { class: "reveal-empty" }, h("div", { class: "big" }, "🥲"),
+        h("p", {}, "Ez az ajtó még üres… Úgy tűnik, valaki elfelejtette megtölteni. Szólj neki! 😄"));
+      parts.push(emptyEl);
     }
     body.replaceChildren(...parts);
     dlg.showModal();
+    if (EXTRAS) revealExtras(data.day, body, emptyEl);
+  }
+
+  // ---------- Extrák: zene, válasz, emlékkönyv ----------
+  function musicEmbed(url) {
+    try {
+      const u = new URL(url);
+      if (u.protocol !== "https:") return null;
+      if (u.hostname === "open.spotify.com") {
+        const m = u.pathname.match(/\/(track|album|playlist|episode|show)\/([A-Za-z0-9]+)/);
+        if (m) return { kind: "spotify " + m[1], src: `https://open.spotify.com/embed/${m[1]}/${m[2]}` };
+        return null;
+      }
+      let id = null;
+      if (u.hostname === "youtu.be") id = u.pathname.slice(1);
+      else if (/(^|\.)youtube\.com$/.test(u.hostname)) {
+        id = u.searchParams.get("v") || (u.pathname.match(/^\/(shorts|embed|live)\/([\w-]{11})/) || [])[2];
+      }
+      if (id && /^[\w-]{11}$/.test(id)) return { kind: "youtube", src: `https://www.youtube-nocookie.com/embed/${id}` };
+    } catch {}
+    return null;
+  }
+  function musicEl(url) {
+    const m = musicEmbed(url);
+    if (!m) return null;
+    return h("iframe", {
+      class: "music " + m.kind, src: m.src, loading: "lazy", title: "Zene",
+      allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture", allowfullscreen: true,
+    });
+  }
+  const musicLink = (url) => musicEmbed(url) && h("a", { class: "music-link", href: url, target: "_blank", rel: "noopener" }, "🎵 Zene meghallgatása");
+
+  async function revealExtras(day, body, emptyEl) {
+    let x;
+    try { x = await call("extras_day", { ...auth(), p_day: day }); } catch { return; }
+    if (!document.getElementById("reveal").open) return;
+    const m = x.music && musicEl(x.music);
+    if (m) {
+      if (emptyEl) emptyEl.remove();
+      body.append(m);
+    }
+    body.append(reactionBox(day, x));
+  }
+
+  function reactionBox(day, x) {
+    let emoji = x.emoji || null;
+    const status = h("span", { class: "react-status" }, x.emoji || x.reply ? "Elküldve ✓" : "");
+    const btns = REACTIONS.map((e) =>
+      h("button", {
+        type: "button", class: "react-btn" + (e === emoji ? " on" : ""), "aria-label": e,
+        onclick: () => {
+          emoji = emoji === e ? null : e;
+          btns.forEach((b) => b.classList.toggle("on", b.textContent === emoji));
+          status.textContent = "";
+        },
+      }, e)
+    );
+    const ta = h("textarea", { rows: 2, maxlength: 1000, placeholder: "Írj vissza neki valamit… 💬" });
+    ta.value = x.reply || "";
+    ta.addEventListener("input", () => (status.textContent = ""));
+    const send = h("button", { type: "button", class: "btn small" }, "Küldés 💌");
+    send.onclick = async () => {
+      send.disabled = true;
+      try {
+        await call("react", { ...auth(), p_day: day, p_emoji: emoji, p_reply: ta.value });
+        status.textContent = emoji || ta.value.trim() ? "Elküldve ✓" : "Törölve";
+        if (emoji) burst(send);
+      } catch (e) {
+        toast(errText(e));
+      } finally {
+        send.disabled = false;
+      }
+    };
+    return h("div", { class: "react-box" },
+      h("p", { class: "react-title" }, "Mit szólsz hozzá?"),
+      h("div", { class: "react-row" }, btns),
+      ta,
+      h("div", { class: "react-actions" }, status, send));
+  }
+
+  async function renderMemories(body) {
+    const list = await call("memories", auth());
+    if (!list.length) {
+      return body.replaceChildren(h("div", { class: "card" }, h("h2", {}, "Emlékeink 📖"),
+        h("p", {}, "Itt gyűlnek majd a kinyitott napok – mindkettőtöké, a válaszokkal együtt. Nyissátok az ajtókat! 💕")));
+    }
+    const side = (title, x, replyLabel) => x && h("div", { class: "mem-side" },
+      h("h4", {}, title),
+      x.image && /^data:image\//.test(x.image) && h("img", { src: x.image, alt: "" }),
+      x.body && x.body.trim() && h("p", { class: "reveal-text" }, x.body),
+      x.music && musicLink(x.music),
+      (x.emoji || x.reply) && h("p", { class: "mem-reply" }, h("b", {}, replyLabel + " "), x.emoji || "", x.reply ? " „" + x.reply + "”" : ""));
+    const head = h("div", { class: "mem-head" },
+      h("p", { class: "hint" }, "Minden kinyitott nap, mindkét irányból. December végén elmenthetitek emléknek. 💕"),
+      h("button", { class: "btn small no-print", onclick: () => window.print() }, "🖨️ Mentés PDF-be / nyomtatás"));
+    body.replaceChildren(head, ...list.map((d) =>
+      h("article", { class: "card memory" },
+        h("h3", {}, "December " + d.day + ". " + DECO[d.day - 1]),
+        h("div", { class: "mem-sides" },
+          side("💝 Amit kaptam", d.received, "A válaszom:"),
+          side("💌 Amit adtam", d.given, "A válasza:")))));
   }
 
   async function renderFill(body) {
-    const list = await call("given_list", auth());
-    const filled = list.filter((x) => x.has_text || x.has_image).length;
+    const [list, extras] = await Promise.all([call("given_list", auth()), EXTRAS ? call("extras_given", auth()) : null]);
+    const ex = Object.fromEntries((extras || []).map((e) => [e.day, e]));
+    const music = (d) => !!(ex[d] && ex[d].music);
+    const filled = list.filter((x) => x.has_text || x.has_image || music(x.day)).length;
     const progress = h("div", { class: "progress" },
       `${filled} / 24 nap megtöltve`,
       h("div", { class: "bar" }, h("i", { style: `width:${(filled / 24) * 100}%` }))
@@ -390,10 +501,12 @@
     );
     const grid = h("div", { class: "calendar fill-grid" },
       list.map((x) => {
-        const isFilled = x.has_text || x.has_image;
+        const isFilled = x.has_text || x.has_image || music(x.day);
         const cls = [isFilled ? "is-filled" : "is-empty", x.locked ? "is-past" : ""].join(" ");
-        const icons = h("span", { class: "icons" }, x.locked ? "🔒" : "", x.has_text ? "📝" : "", x.has_image ? "🖼️" : "");
-        return doorEl(x.day, cls, [icons], () => openEditor(x.day));
+        const icons = h("span", { class: "icons" }, x.locked ? "🔒" : "", x.has_text ? "📝" : "", x.has_image ? "🖼️" : "", music(x.day) ? "🎵" : "");
+        const e = ex[x.day];
+        const badge = e && (e.emoji || e.reply) && h("span", { class: "badge react-badge", title: "Válaszolt" }, e.emoji || "💬");
+        return doorEl(x.day, cls, [icons, badge], () => openEditor(x.day));
       })
     );
     body.replaceChildren(progress, hint, grid);
@@ -414,6 +527,12 @@
     day: null,
     image: null,
   };
+  if (EXTRAS) {
+    ed.music = h("input", { type: "url", maxlength: 300, placeholder: "https://open.spotify.com/track/…  vagy YouTube link" });
+    ed.locked.before(h("label", { class: "field" }, h("span", {}, "Zene 🎵 (Spotify vagy YouTube link – nem kötelező)"), ed.music));
+    ed.reaction = h("p", { class: "editor-reaction", hidden: true });
+    ed.locked.after(ed.reaction);
+  }
 
   function setEditorImage(src) {
     ed.image = src;
@@ -429,13 +548,24 @@
     ed.title.textContent = "December " + day + ". " + DECO[day - 1];
     ed.text.value = "";
     ed.isLocked = false;
+    if (EXTRAS) { ed.music.value = ""; ed.reaction.hidden = true; }
     setEditorImage(null);
     ed.save.disabled = true;
     ed.file.disabled = true;
     ed.dlg.showModal();
     try {
-      const g = await call("given_day", { ...auth(), p_day: day });
+      const [g, extras] = await Promise.all([
+        call("given_day", { ...auth(), p_day: day }),
+        EXTRAS ? call("extras_given", auth()) : null,
+      ]);
       if (ed.day !== day) return;
+      if (EXTRAS) {
+        const e = extras.find((x) => x.day === day) || {};
+        ed.music.value = e.music || "";
+        ed.music.readOnly = !!g.locked;
+        ed.reaction.hidden = !(e.emoji || e.reply);
+        ed.reaction.replaceChildren(h("b", {}, me.recipient + " válasza: "), e.emoji || "", e.reply ? " „" + e.reply + "”" : "");
+      }
       ed.isLocked = !!g.locked;
       ed.text.value = g.body || "";
       setEditorImage(g.image || null);
@@ -492,12 +622,15 @@
   ed.remove.addEventListener("click", () => setEditorImage(null));
   ed.cancel.addEventListener("click", () => ed.dlg.close());
   ed.save.addEventListener("click", async () => {
+    const url = EXTRAS ? ed.music.value.trim() : "";
+    if (url && !musicEmbed(url)) return toast(ERRORS.BAD_MUSIC);
     ed.save.disabled = true;
     ed.save.textContent = "Mentés…";
     try {
       await call("save_gift", { ...auth(), p_day: ed.day, p_body: ed.text.value, p_image: ed.image });
+      if (EXTRAS) await call("save_music", { ...auth(), p_day: ed.day, p_url: url });
       ed.dlg.close();
-      toast(ed.text.value.trim() || ed.image ? "Elmentve! 🎁" : "Kiürítve.");
+      toast(ed.text.value.trim() || ed.image || url ? "Elmentve! 🎁" : "Kiürítve.");
       renderMain("fill");
     } catch (e) {
       toast(errText(e));
