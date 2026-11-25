@@ -4,14 +4,18 @@
   const NS = window.KalendarAPI.NS;
   const SESSION_KEY = NS + (DEMO ? "-demo-session" : "-session");
   const TAB_KEY = NS + "-tab";
-  const SUBTITLE = (window.KALENDAR_CONFIG || {}).SUBTITLE;
-  if (SUBTITLE) document.getElementById("subtitle").textContent = SUBTITLE;
+  const CFG = window.KALENDAR_CONFIG || {};
+  const PEOPLE = CFG.PEOPLE || 3;
+  const LOVE = CFG.THEME === "love";
+  if (CFG.SUBTITLE) document.getElementById("subtitle").textContent = CFG.SUBTITLE;
+  if (LOVE) document.body.classList.add("love");
 
   // Ajtók sorrendje a naptáron (összekeverve, hogy keresgélni kelljen)
   const ORDER = [7, 15, 2, 21, 11, 4, 18, 9, 23, 1, 13, 6, 20, 3, 16, 24, 10, 5, 14, 19, 8, 22, 12, 17];
-  const DECO = ["❄️", "🎄", "⭐", "🔔", "🧦", "🎅", "🍪", "☃️", "🦌", "🕯️", "🎁", "🍭",
+  const DECO = LOVE ? ["❤️", "🎄", "💌", "⭐", "🧸", "💕", "🍪", "☃️", "🌹", "🕯️", "🎁", "💋",
+                       "🧦", "💝", "🎄", "🥂", "🔔", "💞", "🍫", "⛄", "🫶", "🕯️", "🎁", "💖"] : ["❄️", "🎄", "⭐", "🔔", "🧦", "🎅", "🍪", "☃️", "🦌", "🕯️", "🎁", "🍭",
                 "🧤", "❄️", "🎄", "⭐", "🔔", "🧦", "🍪", "☃️", "🦌", "🕯️", "🎁", "🌟"];
-  const AVATARS = ["🦌", "⛄", "🧸", "🐧", "🦊", "🐻‍❄️"];
+  const AVATARS = LOVE ? ["🧸", "🐰"] : ["🦌", "⛄", "🧸", "🐧", "🦊", "🐻‍❄️"];
 
   const ERRORS = {
     BAD_PIN: "Hibás PIN kód 🙈",
@@ -142,7 +146,7 @@
   }
 
   function renderSetup() {
-    const inputs = [0, 1, 2].map((i) =>
+    const inputs = Array.from({ length: PEOPLE }, (_, i) => i).map((i) =>
       h("input", { type: "text", maxlength: 40, placeholder: i + 1 + ". név", autocomplete: "off" })
     );
     const err = h("p", { class: "error" });
@@ -225,11 +229,13 @@
     let people = [];
     try { people = await call("list_people"); } catch {}
     const others = people.map((p) => p.name).filter((n) => n !== me.name);
-    const box = h("div", { class: "giftbox" }, "🎁");
+    const box = h("div", { class: "giftbox" }, LOVE ? "💝" : "🎁");
     const slot = h("div", { class: "slot" }, "?");
-    const info = h("p", {}, "Kisorsolunk neked valakit a többiek közül. Az ő adventi naptárát fogod megtölteni: minden napra rakhatsz bele egy kis üzenetet vagy képet. 💌");
+    const info = LOVE
+      ? h("p", {}, "Itt nincs mit sorsolni – a párod naptárát töltöd meg! Minden napra rakhatsz bele egy kis üzenetet vagy képet. 💌")
+      : h("p", {}, "Kisorsolunk neked valakit a többiek közül. Az ő adventi naptárát fogod megtölteni: minden napra rakhatsz bele egy kis üzenetet vagy képet. 💌");
     const err = h("p", { class: "error" });
-    const btn = h("button", { class: "btn block" }, "Húzok! 🎲");
+    const btn = h("button", { class: "btn block" }, LOVE ? "Mutasd! 💘" : "Húzok! 🎲");
     btn.onclick = async () => {
       btn.disabled = true;
       err.textContent = "";
@@ -255,18 +261,18 @@
         return;
       }
       box.classList.remove("shake");
-      box.textContent = "🎉";
+      box.textContent = LOVE ? "💖" : "🎉";
       slot.textContent = res.recipient;
       slot.classList.add("final");
       me.drawn = true;
       me.recipient = res.recipient;
       burst();
-      info.replaceChildren("Te ", h("b", {}, res.recipient), " naptárát töltöd! Minden napra rakhatsz neki valamit. Pszt, ez titok! 🤫");
+      info.replaceChildren("Te ", h("b", {}, res.recipient), " naptárát töltöd! Minden napra rakhatsz neki valamit. Pszt, ez titok! " + (LOVE ? "😘" : "🤫"));
       btn.textContent = "Kezdjük! ✨";
       btn.disabled = false;
       btn.onclick = () => renderMain("fill");
     };
-    mount(h("div", { class: "card draw-stage" }, h("h2", {}, "Sorsolás"), box, slot, info, err, btn));
+    mount(h("div", { class: "card draw-stage" }, h("h2", {}, LOVE ? "Kinek készülsz?" : "Sorsolás"), box, slot, info, err, btn));
   }
 
   async function renderMain(tab) {
@@ -274,7 +280,7 @@
     sessionStorage.setItem(TAB_KEY, tab);
     const tabs = h("div", { class: "tabs", role: "tablist" },
       h("button", { class: "tab", role: "tab", "aria-selected": String(tab === "mine"), onclick: () => renderMain("mine") }, "🎄 Az én naptáram"),
-      h("button", { class: "tab", role: "tab", "aria-selected": String(tab === "fill"), onclick: () => renderMain("fill") }, "✍️ " + me.recipient + " naptára")
+      h("button", { class: "tab", role: "tab", "aria-selected": String(tab === "fill"), onclick: () => renderMain("fill") }, (LOVE ? "💌 " : "✍️ ") + me.recipient + " naptára")
     );
     const body = h("div", {}, h("div", { class: "loading" }, "🎁"));
     mount(tabs, body);
@@ -294,7 +300,7 @@
         "aria-label": "December " + d + ".",
         onclick,
       },
-      h("span", { class: "door-back" }, "✨"),
+      h("span", { class: "door-back" }, LOVE ? "💖" : "✨"),
       h("span", { class: "door-front" },
         h("span", { class: "num" }, d),
         h("span", { class: "deco" }, DECO[d - 1]),
@@ -511,7 +517,7 @@
   (function lights() {
     const el = document.querySelector(".lights");
     const n = 13;
-    const colors = ["#ff5d6c", "#ffd166", "#7ee0a1", "#7cc6ff", "#ff9ad5"];
+    const colors = LOVE ? ["#ff5d8a", "#ffd166", "#ff9ad5", "#ffffff", "#e83a5a"] : ["#ff5d6c", "#ffd166", "#7ee0a1", "#7cc6ff", "#ff9ad5"];
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
     svg.setAttribute("viewBox", "0 0 100 40");
@@ -557,18 +563,32 @@
       vy: Math.random() * 0.6 + 0.35,
       phase: Math.random() * Math.PI * 2,
       o: Math.random() * 0.5 + 0.45,
+      heart: LOVE && Math.random() < 0.22,
     };
   }
   let sparks = [];
   function burst(el) {
     const rect = el ? el.getBoundingClientRect() : { left: innerWidth / 2 - 50, top: innerHeight / 2 - 50, width: 100, height: 100 };
     const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-    const colors = ["#ffd166", "#ff5d6c", "#7ee0a1", "#ffffff", "#ff9ad5"];
+    const colors = LOVE ? ["#ff5d8a", "#ffd166", "#ffffff", "#ff9ad5", "#e83a5a"] : ["#ffd166", "#ff5d6c", "#7ee0a1", "#ffffff", "#ff9ad5"];
     for (let i = 0; i < 50; i++) {
       const a = Math.random() * Math.PI * 2, s = Math.random() * 5 + 2;
-      sparks.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, life: 1, c: colors[i % colors.length], r: Math.random() * 3 + 2 });
+      sparks.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, life: 1, c: colors[i % colors.length], r: Math.random() * 3 + 2, heart: LOVE && i % 2 === 0 });
     }
     if (reduced) { sparks = []; }
+  }
+  function dot(x, y, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  function heart(x, y, size) {
+    const s = size / 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y + s * 0.9);
+    ctx.bezierCurveTo(x - s * 1.6, y - s * 0.2, x - s * 0.6, y - s * 1.4, x, y - s * 0.4);
+    ctx.bezierCurveTo(x + s * 0.6, y - s * 1.4, x + s * 1.6, y - s * 0.2, x, y + s * 0.9);
+    ctx.fill();
   }
   function frame(t) {
     ctx.clearRect(0, 0, innerWidth, innerHeight);
@@ -579,18 +599,14 @@
         if (f.y > innerHeight + 10) Object.assign(f, newFlake(false));
       }
       ctx.globalAlpha = f.o;
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = f.heart ? "#ff9ab8" : "#fff";
+      f.heart ? heart(f.x, f.y, f.r * 2.2) : dot(f.x, f.y, f.r);
     }
     for (const s of sparks) {
       s.x += s.vx; s.y += s.vy; s.vy += 0.15; s.life -= 0.018;
       ctx.globalAlpha = Math.max(0, s.life);
       ctx.fillStyle = s.c;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fill();
+      s.heart ? heart(s.x, s.y, s.r * 2.2) : dot(s.x, s.y, s.r);
     }
     sparks = sparks.filter((s) => s.life > 0);
     ctx.globalAlpha = 1;

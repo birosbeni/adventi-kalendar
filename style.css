@@ -419,3 +419,19 @@ textarea { resize: vertical; min-height: 120px; line-height: 1.5; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Szerelmes téma (THEME: "love") ---------- */
+body.love {
+  background:
+    radial-gradient(1100px 600px at 50% -10%, rgba(255, 120, 160, 0.22), transparent 60%),
+    radial-gradient(700px 500px at 8% 40%, rgba(232, 58, 90, 0.16), transparent 60%),
+    radial-gradient(700px 500px at 95% 70%, rgba(232, 182, 76, 0.12), transparent 60%),
+    linear-gradient(180deg, #2a1020, #3a1530 45%, #173d33 100%);
+  background-attachment: fixed;
+}
+body.love .card::before { content: "💝"; }
+body.love .logo::after { content: " ♥"; color: #ff7aa2; font-size: .55em; vertical-align: middle; }
+body.love .subtitle { color: #ffc2d4; }
+body.love .c1 .door-front { background: radial-gradient(circle, rgba(255,255,255,.22) 2px, transparent 3px) 0 0 / 16px 16px, linear-gradient(160deg, #3c8263, #255b43); }
+body.love .c5 .door-front { background: linear-gradient(160deg, #b8325f, #7e1d44); }
+body.love .door-back { background: linear-gradient(160deg, #fff1f5, #ffd6e2); }
