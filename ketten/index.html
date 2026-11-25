@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Adventi Kalendár 🎄</title>
+  <meta name="theme-color" content="#123229" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../style.css?v=7" />
+</head>
+<body>
+  <canvas id="snow" aria-hidden="true"></canvas>
+
+  <header class="top">
+    <div class="lights" aria-hidden="true"></div>
+    <h1 class="logo">Adventi Kalendár</h1>
+    <p class="subtitle" id="subtitle">24 kis meglepetés, kettőtöknek ✨</p>
+    <div class="userbar" id="userbar" hidden>
+      <span id="userbar-name"></span>    </div>
+  </header>
+
+  <div class="demo-banner" id="demo-banner" hidden>
+    DEMÓ mód – minden csak ebben a böngészőben tárolódik.
+    <span class="demo-tools">
+      Dátum: <input type="date" id="demo-date" />
+      <button class="link" id="demo-reset">újrakezdés</button>
+    </span>
+  </div>
+
+  <main id="app" aria-live="polite"></main>
+
+  <div class="hills" aria-hidden="true">
+    <svg viewBox="0 0 1440 160" preserveAspectRatio="none">
+      <path d="M0,90 C180,40 330,120 520,80 C720,38 860,110 1040,74 C1210,40 1330,86 1440,70 L1440,160 L0,160 Z" fill="#dfeaf0" />
+      <path d="M0,120 C220,80 380,140 640,112 C880,86 1080,140 1440,104 L1440,160 L0,160 Z" fill="#ffffff" />
+    </svg>
+  </div>
+
+  <!-- Nap megnyitása -->
+  <dialog id="reveal" class="modal">
+    <form method="dialog" class="modal-close"><button aria-label="Bezár">✕</button></form>
+    <div class="modal-ribbon"><span id="reveal-title"></span></div>
+    <div class="reveal-body" id="reveal-body"></div>
+  </dialog>
+
+  <!-- Szerkesztő -->
+  <dialog id="editor" class="modal">
+    <form method="dialog" class="modal-close"><button aria-label="Bezár">✕</button></form>
+    <div class="modal-ribbon"><span id="editor-title"></span></div>
+    <div class="editor-body">
+      <label class="field">
+        <span>Üzenet</span>
+        <textarea id="editor-text" rows="6" maxlength="5000" placeholder="Írj valami kedveset, egy emléket, egy feladatot, egy receptet… 💌"></textarea>
+      </label>
+      <div class="field">
+        <span>Kép</span>
+        <div class="image-drop" id="image-drop">
+          <img id="editor-img" alt="" hidden />
+          <div class="image-empty" id="image-empty">📷 Kattints ide egy kép kiválasztásához</div>
+          <input type="file" id="editor-file" accept="image/*" />
+        </div>
+        <button class="link" id="editor-remove-img" hidden>kép eltávolítása</button>
+      </div>
+      <p class="editor-locked" id="editor-locked" hidden>🔒 Ezt a napot már kinyitotta, nem szerkeszthető.</p>
+      <div class="actions">
+        <button class="btn ghost" id="editor-cancel">Mégse</button>
+        <button class="btn" id="editor-save">Mentés 🎁</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="config.js?v=7"></script>
+  <script src="../api.js?v=7"></script>
+  <script src="../app.js?v=7"></script>
+</body>
+</html>

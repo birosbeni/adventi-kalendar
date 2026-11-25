@@ -1,8 +1,11 @@
 (function () {
   const { DEMO, call, resetDemo } = window.KalendarAPI;
   const app = document.getElementById("app");
-  const SESSION_KEY = window.KalendarAPI.DEMO ? "kalendar-demo-session" : "kalendar-session";
-  const TAB_KEY = "kalendar-tab";
+  const NS = window.KalendarAPI.NS;
+  const SESSION_KEY = NS + (DEMO ? "-demo-session" : "-session");
+  const TAB_KEY = NS + "-tab";
+  const SUBTITLE = (window.KALENDAR_CONFIG || {}).SUBTITLE;
+  if (SUBTITLE) document.getElementById("subtitle").textContent = SUBTITLE;
 
   // Ajtók sorrendje a naptáron (összekeverve, hogy keresgélni kelljen)
   const ORDER = [7, 15, 2, 21, 11, 4, 18, 9, 23, 1, 13, 6, 20, 3, 16, 24, 10, 5, 14, 19, 8, 22, 12, 17];

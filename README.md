@@ -31,3 +31,9 @@ Majd: http://localhost:8765/?date=2026-12-05
 - A Supabase ingyenes projektek 7 nap inaktivitás után szüneteltetődnek – adventben napi használat mellett ez nem gond,
   de ha előtte sokáig senki nem nyúl hozzá, a Supabase felületén egy kattintással újraindítható.
 - Jövőre: `supabase.sql`-ben a `_advent_year()` értékét kell átírni.
+
+## Második, független naptár (`ketten/`)
+
+A `ketten/` mappa ugyanazt a kódot használja, de saját `ketten/config.js`-sel és saját Supabase projekttel,
+így semmilyen adatuk nem közös. Link: https://birosbeni.github.io/adventi-kalendar/ketten/
+Beállítás: új Supabase projekt → SQL Editorban `supabase.sql` lefuttatása → URL + publishable key a `ketten/config.js`-be.

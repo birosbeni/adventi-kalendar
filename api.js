@@ -18,8 +18,11 @@
     return data;
   }
 
+  // Több példány ugyanazon a domainen: mindegyik a saját kulcsaival tárol a böngészőben.
+  const NS = cfg.STORAGE_PREFIX || "kalendar";
+
   // ---------- Demó backend ----------
-  const KEY = "kalendar-demo-db";
+  const KEY = NS + "-demo-db";
   const load = () => JSON.parse(localStorage.getItem(KEY) || '{"people":[],"gifts":{},"opens":{}}');
   const store = (db) => localStorage.setItem(KEY, JSON.stringify(db));
   const YEAR = 2026;
@@ -139,5 +142,5 @@
     return rpc(fn, args);
   }
 
-  window.KalendarAPI = { DEMO, call, resetDemo: () => localStorage.removeItem(KEY) };
+  window.KalendarAPI = { DEMO, NS, call, resetDemo: () => localStorage.removeItem(KEY) };
 })();
